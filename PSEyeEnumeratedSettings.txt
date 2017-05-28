@@ -1,0 +1,46 @@
+These values were obtained by running the enumerateSettings.py script
+I didn't make it, i just downloaded it from the robotpy-cscore repo
+on there its called seetings.py in the examples folder
+the script has to be run with inputs for some reason (idk why)
+this is how I ran it (first arg must be a number):
+python3 enumerateSettings.py 0 auto_exposure
+
+Properties:
+
+raw_brightness (int): value=0 min=0 max=255 step=1 default=0
+
+brightness (int): value=0 min=0 max=100 step=1 default=0
+
+raw_contrast (int): value=32 min=0 max=255 step=1 default=32
+
+contrast (int): value=12 min=0 max=100 step=1 default=12
+
+raw_saturation (int): value=64 min=0 max=255 step=1 default=64
+
+saturation (int): value=25 min=0 max=100 step=1 default=25
+
+raw_hue (int): value=0 min=-90 max=90 step=1 default=0
+
+hue (int): value=50 min=0 max=100 step=1 default=50
+
+white_balance_automatic (bool) value=1 default=1
+
+exposure (int): value=120 min=0 max=255 step=1 default=120
+
+gain_automatic (bool) value=1 default=1
+
+raw_gain (int): value=20 min=0 max=63 step=1 default=20
+
+gain (int): value=31 min=0 max=100 step=1 default=31
+
+horizontal_flip (bool) value=0 default=0
+
+vertical_flip (bool) value=0 default=0
+
+power_line_frequency (enum): value=0    0: Disabled    1: 50 Hz
+
+raw_sharpness (int): value=0 min=0 max=63 step=1 default=0
+
+sharpness (int): value=0 min=0 max=100 step=1 default=0
+
+auto_exposure (enum): value=0    0: Auto Mode    1: Manual Mode

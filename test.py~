@@ -1,0 +1,158 @@
+#import opencv
+import cv2
+#i think this is numbers
+import numpy as np
+#import cscore camera server
+import cscore
+#from cscore import CameraServer
+
+#create the usb cam
+cam = cscore.UsbCamera("usbcam", 0)
+#The pixel format is YUYV becuase that is all the PS Eye supports
+#other cameras can use others, probably mjpeg preferably
+cam.setVideoMode(cscore.VideoMode.PixelFormat.kYUYV, 320, 240, 60)
+#set exposure mode to manual 
+cam.getProperty("auto_exposure").set(1)
+#set the exposure value to 0
+cam.getProperty("exposure").set(0)
+#Set the White balance to manual mode
+cam.getProperty("white_balance_automatic").set(0)
+#set the white balance to a preset for indoor
+#I don't think this camera supports this
+#set the gain mode to manual
+cam.getProperty("gain_automatic").set(0)
+
+#print the camera settings to the terminal
+for prop in cam.enumerateProperties():
+	print(prop.getName())
+
+#create a cv sink, which will grab images from the camera
+cvsink = cscore.CvSink("cvsink")
+cvsink.setSource(cam)
+
+#preallocate memory so that we dont allocate it every loop
+img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
+hsv = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
+thresh = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
+
+#set up mjpeg server
+mjpegServer = cscore.MjpegServer("httpserver", 8081)
+mjpegServer.setSource(cam)
+
+#old camera server work, kleeping for now just in case
+
+#create the camera server and enable its logging
+#cs = CameraServer.getInstance()
+#cs.enableLogging()
+#cs.addCamera(cam)
+#cs.setExposureManual()
+
+#start auto capture, from the 0th device (/dev/video0
+#cam = cs.startAutomaticCapture()
+
+#set the resolution to 320x240
+#cam.setResolution(320, 240)
+
+#create a cvsink from the server to grab cam frames
+#cvsink = cs.getVideo()
+
+#hl = 0
+#hh = 0
+#sl = 0
+#sh = 0
+#vl = 0
+#vh = 0
+
+#def setH():
+#       hh = hh
+
+#def setS():
+#       sh = sh
+
+#def setV():
+#       vh = vh
+
+
+#cv2.namedWindow('Sliders')
+#cv2.createTrackbar('hl', 'Sliders', 0, 255, setH)
+#cv2.createTrackbar('hh', 'Sliders', 0, 255, setH)      
+#cv2.createTrackbar('sl', 'Sliders', 0, 255, setS)
+#cv2.createTrackbar('sh', 'Sliders', 0, 255, setS)
+#cv2.createTrackbar('vl', 'Sliders', 0, 255, setV)
+#cv2.createTrackbar('vh', 'Sliders', 0, 255, setV)
+
+while True:
+
+        #grabe the frame from the sink
+	time, img = cvsink.grabFrame(img)
+
+        #If there's an error, lets report it fam
+	if time == 0:
+                #skip the rest of this iteration (no point in processing an image that doesnt exist)
+		continue
+
+	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+	
+	#hl = cv2.getTrackbarPos('hl', 'Sliders')
+	#hh = cv2.getTrackbarPos('hh', 'Sliders')
+	#sl = cv2.getTrackbarPos('sl', 'Sliders')
+	#sh = cv2.getTrackbarPos('sh', 'Sliders')
+	#vl = cv2.getTrackbarPos('vl', 'Sliders')
+	#vh = cv2.getTrackbarPos('vh', 'Sliders')
+
+	#threshhold for adjustable sliders
+	#thresh = cv2.inRange(hsv, np.array([hl, sl, vl]), np.array([hh, sh, vh]))
+
+        #threshhold for green retroreflection
+	#thresh = cv2.inRange(hsv, np.array([33, 127, 26]), np.array([96, 255, 230]))
+
+        #threshhold for note 5 white retroreflection   
+	#thresh = cv2.inRange(hsv, np.array([0, 52, 128]), np.array([56, 216, 255]))
+
+	#threshhold for iphone white retroreflection
+	thresh = cv2.inRange(hsv, np.array([0, 15, 9]), np.array([83, 179, 255]))
+
+	kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+
+	opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+
+	_, contours, _ = cv2.findContours(opening, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+	for contour in contours:
+
+		contourArea = cv2.contourArea(contour)
+
+		if(contourArea < 1000):
+			continue		
+
+		x, y, w, h = cv2.boundingRect(contour)
+
+		geometricX = int(x+w/2)
+		geometricY = int(y+h/2)
+	
+		#moment = cv2.moments(contour)
+		#contourX = int(moment['m10'] / moment['m00'])
+		#contourY = int(moment['m01'] / moment['m00'])
+
+		cv2.drawContours(img, contour, -1, (255, 0, 255), 3)
+
+		#center of mass
+		#cv2.circle(img, (contourX, contourY), 3, (255, 255, 255), -1)
+		#cv2.putText(img, "Mcenter", (contourX - 20, contourY - 20),
+		#	cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+	
+		#geometric center	
+		cv2.circle(img, (geometricX, geometricY), 3, (0, 255, 0), -1)
+		cv2.putText(img, "Center (" + str(geometricX) + ", " + str(geometricY) + ")",
+			(geometricX - 20, geometricY - 20), cv2.FONT_HERSHEY_SIMPLEX,
+			0.5, (0, 255, 0), 2)
+
+	cv2.imshow('Meme', img)
+
+	c = cv2.waitKey(50)& 0xFF
+
+	if(c == 27):
+		break
+
+#cap.release()
+cv2.destroyAllWindows()

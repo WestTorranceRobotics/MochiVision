@@ -29,7 +29,6 @@ cvsink.setSource(cam)
 img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 hsv = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 thresh = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
-opening = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 
 #set up mjpeg server
 mjpegServer = cscore.MjpegServer("httpserver", 8081)

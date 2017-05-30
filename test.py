@@ -4,6 +4,13 @@ import cv2
 import numpy as np
 #import cscore
 import cscore
+#import netowrktables
+from networktables import NetworkTables
+#import logging for network tables messages
+import logging
+
+#set this thing
+logging.basicConfig(level=logging.DEBUG)
 
 #create the usb cam
 cam = cscore.UsbCamera("usbcam", 0)
@@ -67,6 +74,9 @@ mjpegServer.setSource(cam)
 #cv2.createTrackbar('sh', 'Sliders', 0, 255, setS)
 #cv2.createTrackbar('vl', 'Sliders', 0, 255, setV)
 #cv2.createTrackbar('vh', 'Sliders', 0, 255, setV)
+
+#initialize the netowrktable
+#NetworkTables.initialize(server='10.51.24.2')
 
 #loop forever 
 while True:
@@ -159,7 +169,7 @@ while True:
 	#display the img, which has contours drawn on it now
 	cv2.imshow('Meme', img)
         
-	#check if the escape key is pressed
+	#record keypresses
 	c = cv2.waitKey(50)& 0xFF
     
 	#if the escape key was pressed, stop the program

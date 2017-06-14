@@ -8,6 +8,7 @@ import cscore
 from networktables import NetworkTables
 #import logging for network tables messages
 import logging
+import math
 
 #set this thing
 logging.basicConfig(level=logging.DEBUG)
@@ -40,6 +41,15 @@ img = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 hsv = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 thresh = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
 opening = np.zeros(shape=(240, 320, 3), dtype=np.uint8)
+
+#object and camera constants
+objectInches=2.25
+cameraXFieldPixels=320
+cameraYFieldPixels=240
+cameraXFieldAngle=67.4 
+cameraYFieldAngle=48.4
+cameraTanXAngle=math.tan(math.radians(cameraXFieldAngle/2))
+cameraTanYAngle=math.tan(math.radians(cameraYFieldAngle/2))
 
 #set up mjpeg server, the ip for this is 0.0.0.0:8081
 mjpegServer = cscore.MjpegServer("httpserver", 8081)
@@ -83,7 +93,7 @@ while True:
 		contourArea = cv2.contourArea(contour)
                 
 		#if the contour is not big enough, skip this iteration
-		if(contourArea < 1000):
+		if(contourArea < 500):
 			continue		
                 
 		#draw a rectangle around the contour to calculate its center
@@ -94,15 +104,27 @@ while True:
 		#rectangle with no concave features
 		geometricX = int(x+(w/2))
 		geometricY = int(y+(h/2))
+		distanceToTarget=(objectInches*cameraXFieldPixels)/(2*cameraTanXAngle*(w+h)/2)
 
 		#draw the contours on the original image
 		cv2.drawContours(img, contour, -1, (255, 0, 255), 3)
 	
 		#this draws the geometric center	
 		cv2.circle(img, (geometricX, geometricY), 3, (0, 255, 0), -1)
-		cv2.putText(img, "Center (" + str(geometricX) + ", " + str(geometricY) + ")",
-			(geometricX - 20, geometricY - 20), cv2.FONT_HERSHEY_SIMPLEX,
+		posX=(geometricX-100) if geometricX > 100 else (geometricX+20)
+		posY=(geometricY-20) if geometricY > 30 else (geometricY+20)
+		cv2.putText(img, "C({0},{1})".format(geometricX,geometricY),
+			(posX, posY), cv2.FONT_HERSHEY_SIMPLEX,
 			0.5, (0, 255, 0), 2)
+		cv2.putText(img, "L {0} R {4} T {1} B {5} W {2} H {3}".format(x,y,w,h,(x+w),(y+h)),
+                        (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 0, 255), 1)
+		cv2.putText(img, "Center({0}, {1})".format(int(geometricX-(cameraXFieldPixels/2)),int((cameraYFieldPixels/2)-geometricY)),
+                        (100, 110), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 0, 255), 1)
+		cv2.putText(img, "Distance: {0:.2f}{1}".format(distanceToTarget,'"'),
+                        (10, 230), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 0, 255), 1)
 
 	#display the img, which has contours drawn on it now
 	cv2.imshow('Meme', img)

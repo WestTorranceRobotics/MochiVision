@@ -72,3 +72,12 @@ do "pip install pynetworktables"
 do "pip3 install pybind11==2.0.1"
 do "pip3 install robotpy-cscore"
 it takes a while
+
+# picamera v2 NoIR
+# angle of view: 68.2 x 48.8
+# eg. at 12" from camera, field of view is 16.25" x 10.9"
+# how to install the driver for the picamera, non-usb camera as USB 0
+sudo modprobe bcm2835-v4l2
+# this should create a device in the /dev dir called video0
+ls -l /dev/video0
+

@@ -10,6 +10,34 @@ from networktables import NetworkTables
 import logging
 import math
 
+def order_points(pts):
+	# sort the points based on their x-coordinates
+	xSorted = pts[np.argsort(pts[:, 0]), :]
+ 
+	# grab the left-most and right-most points from the sorted
+	# x-roodinate points
+	leftMost = xSorted[:2, :]
+	rightMost = xSorted[2:, :]
+ 
+	# now, sort the left-most coordinates according to their
+	# y-coordinates so we can grab the top-left and bottom-left
+	# points, respectively
+	leftMost = leftMost[np.argsort(leftMost[:, 1]), :]
+	(tl, bl) = leftMost
+ 
+	# now that we have the top-left coordinate, use it as an
+	# anchor to calculate the Euclidean distance between the
+	# top-left and right-most points; by the Pythagorean
+	# theorem, the point with the largest distance will be
+	# our bottom-right point
+	D = dist.cdist(tl[np.newaxis], rightMost, "euclidean")[0]
+	(br, tr) = rightMost[np.argsort(D)[::-1], :]
+ 
+	# return the coordinates in top-left, top-right,
+	# bottom-right, and bottom-left order
+	return np.array([tl, tr, br, bl], dtype="float32")
+
+
 #set this thing
 logging.basicConfig(level=logging.DEBUG)
 
@@ -50,10 +78,13 @@ cameraXFieldAngle=67.4
 cameraYFieldAngle=48.4
 cameraTanXAngle=math.tan(math.radians(cameraXFieldAngle/2))
 cameraTanYAngle=math.tan(math.radians(cameraYFieldAngle/2))
+min_ratio=0.6
+max_ratio=0.75
 
 #set up mjpeg server, the ip for this is 0.0.0.0:8081
 mjpegServer = cscore.MjpegServer("httpserver", 8081)
 mjpegServer.setSource(cam)
+
 
 #initialize the netowrktable
 NetworkTables.initialize(server='10.51.24.2')
@@ -89,15 +120,14 @@ while True:
 	#loop through each contour in contours
 	for contour in contours:
                 
-		#get the contour area of the contour
-		contourArea = cv2.contourArea(contour)
-                
-		#if the contour is not big enough, skip this iteration
-		if(contourArea < 500):
-			continue		
-                
+		#get the contour bounding rectangle
+
+        x,y,w,h = cv2.boundingRect(contour)
+		ratio = (float)(w) / h
+		if (ratio < min_ratio or ratio > max_ratio):
+                continue
+
 		#draw a rectangle around the contour to calculate its center
-		x, y, w, h = cv2.boundingRect(contour)
                 
 		#calculate centerX and centerY
 		#these are geometric, so a concave shape will be seen as a 
@@ -106,11 +136,16 @@ while True:
 		geometricY = int(y+(h/2))
 		distanceToTarget=(objectInches*cameraXFieldPixels)/(2*cameraTanXAngle*(w+h)/2)
 
+		#min rectangle will show slope of contour
+		minRect = cv2.minAreaRect(contour)
+    	box = cv2.boxPoints(minRect)
+		rectPts = order_points(box)
+    		
 		#draw the contours on the original image
 		cv2.drawContours(img, contour, -1, (255, 0, 255), 3)
 	
 		#this draws the geometric center	
-		cv2.circle(img, (geometricX, geometricY), 3, (0, 255, 0), -1)
+		#cv2.circle(img, (geometricX, geometricY), 3, (0, 255, 0), -1)
 		posX=(geometricX-100) if geometricX > 100 else (geometricX+20)
 		posY=(geometricY-20) if geometricY > 30 else (geometricY+20)
 		cv2.putText(img, "C({0},{1})".format(geometricX,geometricY),
@@ -138,3 +173,4 @@ while True:
 
 #destroy all the windows created by opencv
 cv2.destroyAllWindows()
+
